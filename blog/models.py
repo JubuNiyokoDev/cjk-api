@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -22,22 +23,8 @@ class BlogPost(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    class Meta:
-        ordering = ['-created_at']
+    likes = GenericRelation('social.Like', related_query_name='blogpost')
+    comments = GenericRelation('social.Comment', related_query_name='blogpost')
     
     def __str__(self):
         return self.title
-    
-    @property
-    def likes_count(self):
-        from django.contrib.contenttypes.models import ContentType
-        from social.models import Like
-        ct = ContentType.objects.get_for_model(self)
-        return Like.objects.filter(content_type=ct, object_id=self.id).count()
-    
-    @property
-    def comments_count(self):
-        from django.contrib.contenttypes.models import ContentType
-        from social.models import Comment
-        ct = ContentType.objects.get_for_model(self)
-        return Comment.objects.filter(content_type=ct, object_id=self.id).count()

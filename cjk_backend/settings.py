@@ -139,6 +139,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Google Gemini API Key
 GOOGLE_API_KEY = config('GOOGLE_API_KEY', default='')
 
+COHERE_API_KEY = config('COHERE_API_KEY', default='')
+COHERE_MODEL = config('COHERE_MODEL', default='command-r-08-2024')
+
+
 # CORS Settings
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000').split(',')
 CORS_ALLOW_CREDENTIALS = True

@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 
 class Activity(models.Model):
     ACTIVITY_TYPES = [
@@ -19,6 +20,9 @@ class Activity(models.Model):
     is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    likes = GenericRelation('social.Like', related_query_name='activity')
+    comments = GenericRelation('social.Comment', related_query_name='activity')
     
     class Meta:
         ordering = ['-date_activite']

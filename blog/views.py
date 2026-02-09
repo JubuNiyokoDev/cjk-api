@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Count
 from .models import BlogPost, Category
 from .serializers import BlogPostSerializer, CategorySerializer
 from social.models import Comment
@@ -21,9 +22,13 @@ class BlogPostViewSet(viewsets.ModelViewSet):
     filterset_fields = ['category', 'is_published']
     
     def get_queryset(self):
+        queryset = BlogPost.objects.annotate(
+            likes_count=Count('likes'),
+            comments_count=Count('comments')
+        )
         if self.request.user.is_authenticated and self.request.user.is_staff:
-            return BlogPost.objects.all()
-        return BlogPost.objects.filter(is_published=True)
+            return queryset
+        return queryset.filter(is_published=True)
     
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)

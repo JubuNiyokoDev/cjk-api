@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.contrib.contenttypes.models import ContentType
 from .models import Like, Comment, ChatRoom, ChatMessage
 
 class LikeSerializer(serializers.ModelSerializer):
@@ -12,11 +13,25 @@ class LikeSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)
     user_photo = serializers.ImageField(source='user.photo', read_only=True)
+    content_type_str = serializers.CharField(write_only=True, required=False)
     
     class Meta:
         model = Comment
-        fields = ['id', 'user', 'user_name', 'user_photo', 'content_type', 'object_id', 'text', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'user_name', 'user_photo', 'content_type', 'content_type_str', 'object_id', 'text', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'content_type', 'user']
+        extra_kwargs = {
+            'object_id': {'required': True}
+        }
+    
+    def create(self, validated_data):
+        content_type_str = validated_data.pop('content_type_str')
+        content_type = ContentType.objects.get(model=content_type_str.lower())
+        validated_data['content_type'] = content_type
+        return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        validated_data.pop('content_type_str', None)
+        return super().update(instance, validated_data)
 
 class ChatMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
