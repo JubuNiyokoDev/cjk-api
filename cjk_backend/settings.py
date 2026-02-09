@@ -27,7 +27,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-+j!5q9&+#_utls(h^t3n4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,192.168.0.202').split(',')
 
 AUTH_USER_MODEL = 'members.Member'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'activities',
     'members',
     'social',
+    'chatbot',
 ]
 
 MIDDLEWARE = [
@@ -134,6 +135,9 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Google Gemini API Key
+GOOGLE_API_KEY = config('GOOGLE_API_KEY', default='')
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000').split(',')

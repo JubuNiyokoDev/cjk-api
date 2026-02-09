@@ -1,12 +1,12 @@
 from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Activity
 from .serializers import ActivitySerializer
+from .permissions import IsStaffOrReadOnly
 
 class ActivityViewSet(viewsets.ModelViewSet):
     serializer_class = ActivitySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaffOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['activity_type', 'is_published']
     

@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/news/', include('news.urls')),
     path('api/activities/', include('activities.urls')),
     path('api/social/', include('social.urls')),
+    path('api/chatbot/', include('chatbot.urls')),
 ]
 
 if settings.DEBUG:
