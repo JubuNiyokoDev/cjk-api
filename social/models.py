@@ -27,6 +27,32 @@ class Comment(models.Model):
         ordering = ['-created_at']
         indexes = [models.Index(fields=['content_type', 'object_id'])]
 
+class GalleryItem(models.Model):
+    TYPE_CHOICES = [
+        ('photo', 'Photo'),
+        ('video', 'Video'),
+    ]
+    HEIGHT_CHOICES = [
+        ('short', 'Short'),
+        ('medium', 'Medium'),
+        ('tall', 'Tall'),
+    ]
+    
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    url = models.URLField(max_length=500)
+    thumbnail = models.URLField(max_length=500, blank=True, null=True)
+    title = models.CharField(max_length=200)
+    category = models.CharField(max_length=100)
+    height = models.CharField(max_length=10, choices=HEIGHT_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return self.title
+
 class ChatRoom(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)

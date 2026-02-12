@@ -3,8 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
 from django.contrib.contenttypes.models import ContentType
-from .models import Like, Comment, ChatRoom, ChatMessage
-from .serializers import LikeSerializer, CommentSerializer, ChatRoomSerializer, ChatMessageSerializer
+from .models import Like, Comment, ChatRoom, ChatMessage, GalleryItem
+from .serializers import LikeSerializer, CommentSerializer, ChatRoomSerializer, ChatMessageSerializer, GalleryItemSerializer
 
 class LikeViewSet(viewsets.ModelViewSet):
     serializer_class = LikeSerializer
@@ -111,3 +111,12 @@ class ChatMessageViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         return ChatMessage.objects.filter(room__members=self.request.user)
+
+class GalleryItemViewSet(viewsets.ModelViewSet):
+    queryset = GalleryItem.objects.all()
+    serializer_class = GalleryItemSerializer
+    
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [AllowAny()]
+        return [IsAuthenticated()]

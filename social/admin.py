@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Like, Comment, ChatRoom, ChatMessage
+from .models import Like, Comment, ChatRoom, ChatMessage, GalleryItem
 
 @admin.register(Like)
 class LikeAdmin(admin.ModelAdmin):
@@ -23,3 +23,9 @@ class ChatMessageAdmin(admin.ModelAdmin):
     list_display = ['room', 'sender', 'message', 'is_read', 'created_at']
     list_filter = ['is_read', 'created_at']
     search_fields = ['message']
+
+@admin.register(GalleryItem)
+class GalleryItemAdmin(admin.ModelAdmin):
+    list_display = ['title', 'type', 'category', 'height', 'created_at']
+    list_filter = ['type', 'category', 'height', 'created_at']
+    search_fields = ['title', 'category']
