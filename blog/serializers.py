@@ -17,7 +17,7 @@ class BlogPostSerializer(serializers.ModelSerializer):
     class Meta:
         model = BlogPost
         fields = ['id', 'title', 'slug', 'author', 'author_name', 'category', 'category_name', 'content', 'image', 'is_published', 'created_at', 'updated_at', 'likes_count', 'comments_count', 'is_liked', 'content_type']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'author']
     
     def get_content_type(self, obj):
         return 'blogpost'

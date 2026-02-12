@@ -11,7 +11,7 @@ class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Activity
         fields = ['id', 'title', 'description', 'activity_type', 'author', 'author_name', 'image', 'date_activite', 'is_published', 'created_at', 'updated_at', 'content_type', 'likes_count', 'comments_count', 'is_liked']
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'author']
     
     def get_content_type(self, obj):
         return 'activity'

@@ -27,7 +27,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-+j!5q9&+#_utls(h^t3n4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,192.168.0.202').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,192.168.0.202,10.34.146.127').split(',')
 
 AUTH_USER_MODEL = 'members.Member'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
