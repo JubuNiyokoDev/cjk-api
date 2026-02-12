@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.contenttypes.models import ContentType
-from .models import Like, Comment, ChatRoom, ChatMessage
+from .models import Like, Comment, ChatRoom, ChatMessage, GalleryItem
 
 class LikeSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)
@@ -58,3 +58,11 @@ class ChatRoomSerializer(serializers.ModelSerializer):
     def get_unread_count(self, obj):
         user = self.context['request'].user
         return obj.messages.filter(is_read=False).exclude(sender=user).count()
+
+class GalleryItemSerializer(serializers.ModelSerializer):
+    _id = serializers.CharField(source='id', read_only=True)
+    
+    class Meta:
+        model = GalleryItem
+        fields = ['_id', 'type', 'url', 'thumbnail', 'title', 'category', 'height', 'created_at', 'updated_at']
+        read_only_fields = ['_id', 'created_at', 'updated_at']

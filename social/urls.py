@@ -1,12 +1,13 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import LikeViewSet, CommentViewSet, ChatRoomViewSet, ChatMessageViewSet
+from .views import LikeViewSet, CommentViewSet, ChatRoomViewSet, ChatMessageViewSet, GalleryItemViewSet
 
 router = DefaultRouter()
 router.register(r'likes', LikeViewSet, basename='like')
 router.register(r'comments', CommentViewSet, basename='comment')
 router.register(r'chat/rooms', ChatRoomViewSet, basename='chatroom')
 router.register(r'chat/messages', ChatMessageViewSet, basename='chatmessage')
+router.register(r'gallery', GalleryItemViewSet, basename='gallery')
 
 urlpatterns = [
     path('', include(router.urls)),
