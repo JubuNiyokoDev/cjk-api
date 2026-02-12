@@ -125,7 +125,12 @@ class GalleryItemViewSet(viewsets.ModelViewSet):
         if not (self.request.user.is_staff or self.request.user.is_superuser):
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Seuls les staff/admin peuvent créer des éléments de galerie.")
-        serializer.save()
+        instance = serializer.save()
+        if instance.file:
+            instance.url = instance.file.url
+        if instance.type == 'video' and instance.thumbnail_file:
+            instance.thumbnail = instance.thumbnail_file.url
+        instance.save()
     
     def perform_update(self, serializer):
         if not (self.request.user.is_staff or self.request.user.is_superuser):

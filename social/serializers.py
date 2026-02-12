@@ -60,9 +60,24 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         return obj.messages.filter(is_read=False).exclude(sender=user).count()
 
 class GalleryItemSerializer(serializers.ModelSerializer):
-    _id = serializers.CharField(source='id', read_only=True)
-    
+    id = serializers.CharField(read_only=True)
+    file = serializers.FileField(required=False, allow_null=True)
+    thumbnail_file = serializers.FileField(required=False, allow_null=True)
+
     class Meta:
         model = GalleryItem
-        fields = ['_id', 'type', 'url', 'thumbnail', 'title', 'category', 'height', 'created_at', 'updated_at']
-        read_only_fields = ['_id', 'created_at', 'updated_at']
+        fields = ['id', 'type', 'file', 'url', 'thumbnail', 'thumbnail_file', 'title', 'category', 'height', 'order', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'url', 'thumbnail', 'created_at', 'updated_at']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request', None)
+        # Utiliser build_absolute_uri pour url et thumbnail
+        if data.get('url') and request:
+            data['url'] = request.build_absolute_uri(data['url'])
+        if data.get('thumbnail') and request:
+            data['thumbnail'] = request.build_absolute_uri(data['thumbnail'])
+        # Pour les images, thumbnail = url
+        if data['type'] == 'photo':
+            data['thumbnail'] = data['url']
+        return data

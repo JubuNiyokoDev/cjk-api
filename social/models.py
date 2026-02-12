@@ -39,16 +39,31 @@ class GalleryItem(models.Model):
     ]
     
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
-    url = models.URLField(max_length=500)
+    file = models.FileField(upload_to='social/', blank=True, null=True)
+    url = models.URLField(max_length=500, blank=True, null=True)
     thumbnail = models.URLField(max_length=500, blank=True, null=True)
+    thumbnail_file = models.FileField(upload_to='social/thumbnails/', blank=True, null=True)
     title = models.CharField(max_length=200)
     category = models.CharField(max_length=100)
     height = models.CharField(max_length=10, choices=HEIGHT_CHOICES)
+    order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self.file and not self.url:
+            self.url = self.file.url
+        if self.type == 'video' and self.thumbnail_file:
+            self.thumbnail = self.thumbnail_file.url
+        if self.type == 'photo' and self.file:
+            self.thumbnail = self.file.url
+        super().save(*args, **kwargs)
     
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['order', '-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['order'], name='unique_galleryitem_order')
+        ]
     
     def __str__(self):
         return self.title
