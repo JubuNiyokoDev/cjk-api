@@ -120,3 +120,21 @@ class GalleryItemViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [AllowAny()]
         return [IsAuthenticated()]
+    
+    def perform_create(self, serializer):
+        if not (self.request.user.is_staff or self.request.user.is_superuser):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Seuls les staff/admin peuvent créer des éléments de galerie.")
+        serializer.save()
+    
+    def perform_update(self, serializer):
+        if not (self.request.user.is_staff or self.request.user.is_superuser):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Seuls les staff/admin peuvent modifier des éléments de galerie.")
+        serializer.save()
+    
+    def perform_destroy(self, instance):
+        if not (self.request.user.is_staff or self.request.user.is_superuser):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Seuls les staff/admin peuvent supprimer des éléments de galerie.")
+        instance.delete()
