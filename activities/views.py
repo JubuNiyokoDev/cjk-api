@@ -16,7 +16,8 @@ class ActivityViewSet(viewsets.ModelViewSet):
             likes_count=Count('likes'),
             comments_count=Count('comments')
         )
-        if self.request.user.is_staff:
+        user = self.request.user
+        if user.is_authenticated and user.is_staff:
             return queryset
         return queryset.filter(is_published=True)
     

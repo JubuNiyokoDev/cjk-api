@@ -2,7 +2,10 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
+from rest_framework.exceptions import PermissionDenied
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from django.db.models import Max
 from .models import Like, Comment, ChatRoom, ChatMessage, GalleryItem
 from .serializers import LikeSerializer, CommentSerializer, ChatRoomSerializer, ChatMessageSerializer, GalleryItemSerializer
 
@@ -115,31 +118,77 @@ class ChatMessageViewSet(viewsets.ReadOnlyModelViewSet):
 class GalleryItemViewSet(viewsets.ModelViewSet):
     queryset = GalleryItem.objects.all()
     serializer_class = GalleryItemSerializer
-    
+
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
             return [AllowAny()]
         return [IsAuthenticated()]
-    
+
+    def _assert_staff(self, message):
+        user = self.request.user
+        if not (user.is_authenticated and (user.is_staff or user.is_superuser)):
+            raise PermissionDenied(message)
+
     def perform_create(self, serializer):
-        if not (self.request.user.is_staff or self.request.user.is_superuser):
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Seuls les staff/admin peuvent créer des éléments de galerie.")
+        self._assert_staff("Seuls les staff/admin peuvent créer des éléments de galerie.")
         instance = serializer.save()
         if instance.file:
             instance.url = instance.file.url
         if instance.type == 'video' and instance.thumbnail_file:
             instance.thumbnail = instance.thumbnail_file.url
         instance.save()
-    
+
     def perform_update(self, serializer):
-        if not (self.request.user.is_staff or self.request.user.is_superuser):
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Seuls les staff/admin peuvent modifier des éléments de galerie.")
+        self._assert_staff("Seuls les staff/admin peuvent modifier des éléments de galerie.")
         serializer.save()
-    
+
     def perform_destroy(self, instance):
-        if not (self.request.user.is_staff or self.request.user.is_superuser):
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Seuls les staff/admin peuvent supprimer des éléments de galerie.")
+        self._assert_staff("Seuls les staff/admin peuvent supprimer des éléments de galerie.")
         instance.delete()
+
+    @action(detail=False, methods=['post'])
+    def reorder(self, request):
+        """Réordonne la galerie à partir d'une liste [{id, order}, ...].
+
+        Le champ `order` porte une contrainte d'unicité : on déplace donc
+        d'abord les éléments concernés hors de la plage utilisée, puis on
+        applique les positions finales, le tout dans une transaction.
+        """
+        self._assert_staff("Seuls les staff/admin peuvent réordonner la galerie.")
+
+        payload = request.data.get('items')
+        if not isinstance(payload, list) or not payload:
+            return Response(
+                {'error': "Le champ 'items' doit être une liste non vide."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            requested = {int(entry['id']): int(entry['order']) for entry in payload}
+        except (KeyError, TypeError, ValueError):
+            return Response(
+                {'error': "Chaque élément doit contenir un 'id' et un 'order' numériques."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        items = list(GalleryItem.objects.filter(id__in=requested.keys()))
+        if len(items) != len(requested):
+            return Response(
+                {'error': "Un ou plusieurs éléments sont introuvables."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        with transaction.atomic():
+            offset = (GalleryItem.objects.aggregate(Max('order'))['order__max'] or 0) + 1
+            for index, item in enumerate(items):
+                item.order = offset + index
+            GalleryItem.objects.bulk_update(items, ['order'])
+
+            for item in items:
+                item.order = requested[item.id]
+            GalleryItem.objects.bulk_update(items, ['order'])
+
+        serializer = self.get_serializer(
+            GalleryItem.objects.all(), many=True, context={'request': request}
+        )
+        return Response(serializer.data)
