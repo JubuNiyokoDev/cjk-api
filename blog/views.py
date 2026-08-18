@@ -5,9 +5,10 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count
-from .models import BlogPost, Category
+from core.views import GalleryActionsMixin
+from .models import BlogPost, BlogImage, Category
 from .permissions import IsStaffOrReadOnly
-from .serializers import BlogPostSerializer, CategorySerializer
+from .serializers import BlogPostSerializer, BlogImageSerializer, CategorySerializer
 from social.models import Comment
 from social.serializers import CommentSerializer
 
@@ -16,14 +17,17 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsStaffOrReadOnly]
 
-class BlogPostViewSet(viewsets.ModelViewSet):
+class BlogPostViewSet(GalleryActionsMixin, viewsets.ModelViewSet):
     serializer_class = BlogPostSerializer
     permission_classes = [IsStaffOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['category', 'is_published']
+    image_model = BlogImage
+    image_serializer_class = BlogImageSerializer
+    image_parent_field = 'post'
 
     def get_queryset(self):
-        queryset = BlogPost.objects.annotate(
+        queryset = BlogPost.objects.prefetch_related('images').annotate(
             likes_count=Count('likes'),
             comments_count=Count('comments')
         )

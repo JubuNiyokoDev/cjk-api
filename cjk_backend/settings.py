@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
+    'core',
     'blog',
     'news',
     'activities',
@@ -174,7 +175,22 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    # Rate limiting : seules les écritures sont comptées (voir core/throttling.py).
+    # Les lectures publiques (site Next.js côté serveur) ne sont jamais limitées.
+    'DEFAULT_THROTTLE_CLASSES': (
+        'core.throttling.AnonWriteRateThrottle',
+        'core.throttling.UserWriteRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon_write': '20/min',   # login, chatbot… par IP
+        'user_write': '60/min',   # écritures des comptes connectés
+        'uploads': '30/min',      # lots d'upload d'images (staff)
+    },
 }
+
+# Uploads : accepte des lots de photos (10 x 8 Mo max par requête).
+DATA_UPLOAD_MAX_MEMORY_SIZE = 90 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
 # JWT Settings
 SIMPLE_JWT = {
