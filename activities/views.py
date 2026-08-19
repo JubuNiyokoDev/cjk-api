@@ -2,9 +2,28 @@ from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count
 from core.views import GalleryActionsMixin, HashtagFilterMixin
-from .models import Activity, ActivityImage
-from .serializers import ActivitySerializer, ActivityImageSerializer
+from .models import Activity, ActivityCategory, ActivityImage
+from .serializers import (
+    ActivityCategorySerializer,
+    ActivitySerializer,
+    ActivityImageSerializer,
+)
 from .permissions import IsStaffOrReadOnly
+
+class ActivityCategoryViewSet(viewsets.ModelViewSet):
+    """CRUD des catégories d'activités : lecture publique, écriture staff."""
+    serializer_class = ActivityCategorySerializer
+    permission_classes = [IsStaffOrReadOnly]
+    pagination_class = None
+
+    def get_queryset(self):
+        queryset = ActivityCategory.objects.all()
+        user = self.request.user
+        # Le public ne voit que les catégories actives ; le staff voit tout
+        # pour pouvoir réactiver une catégorie masquée.
+        if not (user.is_authenticated and user.is_staff):
+            return queryset.filter(is_active=True)
+        return queryset
 
 class ActivityViewSet(HashtagFilterMixin, GalleryActionsMixin, viewsets.ModelViewSet):
     serializer_class = ActivitySerializer

@@ -1,9 +1,16 @@
 from django.contrib import admin
-from .models import Activity, ActivityImage
+from .models import Activity, ActivityCategory, ActivityImage
 
 class ActivityImageInline(admin.TabularInline):
     model = ActivityImage
     extra = 0
+
+@admin.register(ActivityCategory)
+class ActivityCategoryAdmin(admin.ModelAdmin):
+    list_display = ['name', 'slug', 'color', 'order', 'is_active']
+    list_editable = ['color', 'order', 'is_active']
+    search_fields = ['name', 'slug']
+    prepopulated_fields = {'slug': ('name',)}
 
 @admin.register(Activity)
 class ActivityAdmin(admin.ModelAdmin):
