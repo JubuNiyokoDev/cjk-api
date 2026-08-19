@@ -1,12 +1,12 @@
 from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count
-from core.views import GalleryActionsMixin
+from core.views import GalleryActionsMixin, HashtagFilterMixin
 from .models import Activity, ActivityImage
 from .serializers import ActivitySerializer, ActivityImageSerializer
 from .permissions import IsStaffOrReadOnly
 
-class ActivityViewSet(GalleryActionsMixin, viewsets.ModelViewSet):
+class ActivityViewSet(HashtagFilterMixin, GalleryActionsMixin, viewsets.ModelViewSet):
     serializer_class = ActivitySerializer
     permission_classes = [IsStaffOrReadOnly]
     filter_backends = [DjangoFilterBackend]

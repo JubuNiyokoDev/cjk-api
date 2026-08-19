@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count
-from core.views import GalleryActionsMixin
+from core.views import GalleryActionsMixin, HashtagFilterMixin
 from .models import BlogPost, BlogImage, Category
 from .permissions import IsStaffOrReadOnly
 from .serializers import BlogPostSerializer, BlogImageSerializer, CategorySerializer
@@ -17,7 +17,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsStaffOrReadOnly]
 
-class BlogPostViewSet(GalleryActionsMixin, viewsets.ModelViewSet):
+class BlogPostViewSet(HashtagFilterMixin, GalleryActionsMixin, viewsets.ModelViewSet):
     serializer_class = BlogPostSerializer
     permission_classes = [IsStaffOrReadOnly]
     filter_backends = [DjangoFilterBackend]

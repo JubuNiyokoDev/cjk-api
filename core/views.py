@@ -5,12 +5,35 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from .hashtags import parse_hashtags
 from .throttling import UploadRateThrottle
 
 MAX_IMAGES_PER_UPLOAD = 10
 MAX_IMAGES_PER_POST = 20
 MAX_IMAGE_SIZE_MB = 8
 ALLOWED_IMAGE_TYPES = ('image/jpeg', 'image/png', 'image/webp', 'image/gif')
+
+
+class HashtagFilterMixin:
+    """Filtre `?hashtag=paix` sur le champ libre `hashtags` d'un contenu.
+
+    Le champ étant du texte libre ("#paix #jeunesse"), on préfiltre en SQL
+    (icontains) puis on ne garde que les objets dont un hashtag normalisé
+    correspond exactement (mêmes règles que `parse_hashtags`).
+    """
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        raw = self.request.query_params.get('hashtag', '')
+        tag = raw.strip().lstrip('#').lower()
+        if not tag:
+            return queryset
+        candidates = queryset.filter(hashtags__icontains=tag)
+        matching_ids = [
+            obj.pk for obj in candidates
+            if tag in (parsed.lower() for parsed in parse_hashtags(obj.hashtags))
+        ]
+        return queryset.filter(pk__in=matching_ids)
 
 
 class GalleryActionsMixin:

@@ -1,12 +1,12 @@
 from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count
-from core.views import GalleryActionsMixin
+from core.views import GalleryActionsMixin, HashtagFilterMixin
 from .models import News, NewsImage
 from .serializers import NewsSerializer, NewsImageSerializer
 from .permissions import IsStaffOrReadOnly
 
-class NewsViewSet(GalleryActionsMixin, viewsets.ModelViewSet):
+class NewsViewSet(HashtagFilterMixin, GalleryActionsMixin, viewsets.ModelViewSet):
     serializer_class = NewsSerializer
     permission_classes = [IsStaffOrReadOnly]
     filter_backends = [DjangoFilterBackend]
