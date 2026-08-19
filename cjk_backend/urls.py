@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/activities/', include('activities.urls')),
     path('api/social/', include('social.urls')),
     path('api/chatbot/', include('chatbot.urls')),
+    path('api/organization/', include('organization.urls')),
 ]
 
 if settings.DEBUG:

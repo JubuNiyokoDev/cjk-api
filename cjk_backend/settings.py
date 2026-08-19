@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'members',
     'social',
     'chatbot',
+    'organization',
 ]
 
 MIDDLEWARE = [
@@ -156,6 +157,9 @@ GOOGLE_API_KEY = config('GOOGLE_API_KEY', default='')
 
 COHERE_API_KEY = config('COHERE_API_KEY', default='')
 COHERE_MODEL = config('COHERE_MODEL', default='command-r-08-2024')
+
+# URL publique du site (utilisée par le chatbot pour générer des liens)
+FRONTEND_SITE_URL = config('FRONTEND_SITE_URL', default='https://cjkamenge.com')
 
 
 # CORS Settings

@@ -47,6 +47,7 @@ class GalleryItem(models.Model):
     category = models.CharField(max_length=100)
     height = models.CharField(max_length=10, choices=HEIGHT_CHOICES)
     order = models.PositiveIntegerField(default=0)
+    is_public = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

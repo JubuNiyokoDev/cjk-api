@@ -66,7 +66,7 @@ class GalleryItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GalleryItem
-        fields = ['id', 'type', 'file', 'url', 'thumbnail', 'thumbnail_file', 'title', 'category', 'height', 'order', 'created_at', 'updated_at']
+        fields = ['id', 'type', 'file', 'url', 'thumbnail', 'thumbnail_file', 'title', 'category', 'height', 'order', 'is_public', 'created_at', 'updated_at']
         read_only_fields = ['id', 'url', 'thumbnail', 'created_at', 'updated_at']
 
     def to_representation(self, instance):

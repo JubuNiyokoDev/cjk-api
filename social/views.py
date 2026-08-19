@@ -124,6 +124,13 @@ class GalleryItemViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return [IsAuthenticated()]
 
+    def get_queryset(self):
+        """Le public ne voit que les éléments publics ; le staff voit tout."""
+        user = self.request.user
+        if user.is_authenticated and (user.is_staff or user.is_superuser):
+            return GalleryItem.objects.all()
+        return GalleryItem.objects.filter(is_public=True)
+
     def _assert_staff(self, message):
         user = self.request.user
         if not (user.is_authenticated and (user.is_staff or user.is_superuser)):
@@ -191,4 +198,19 @@ class GalleryItemViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(
             GalleryItem.objects.all(), many=True, context={'request': request}
         )
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def toggle_visibility(self, request, pk=None):
+        """Bascule la visibilité publique/cachée d'un élément (staff uniquement)."""
+        self._assert_staff("Seuls les staff/admin peuvent changer la visibilité.")
+        item = GalleryItem.objects.filter(pk=pk).first()
+        if not item:
+            return Response(
+                {'error': "Élément introuvable."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        item.is_public = not item.is_public
+        item.save(update_fields=['is_public', 'updated_at'])
+        serializer = self.get_serializer(item, context={'request': request})
         return Response(serializer.data)

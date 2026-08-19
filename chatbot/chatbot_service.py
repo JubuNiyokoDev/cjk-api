@@ -77,12 +77,15 @@ def get_database_context():
         "members_count": Member.objects.filter(is_active_member=True).count()
     }
 
+    site_url = getattr(settings, "FRONTEND_SITE_URL", "https://cjkamenge.com").rstrip("/")
+
     posts = BlogPost.objects.filter(is_published=True)[:5]
     for post in posts:
         context["blog_posts"].append({
             "title": post.title,
             "author": post.author.get_full_name(),
-            "category": post.category.name if post.category else "Sans categorie"
+            "category": post.category.name if post.category else "Sans categorie",
+            "url": f"{site_url}/blog/{post.id}",
         })
 
     activities = Activity.objects.filter(is_published=True)[:5]
@@ -90,9 +93,11 @@ def get_database_context():
         context["activities"].append({
             "title": activity.title,
             "type": activity.get_activity_type_display(),
-            "date": activity.date_activite.strftime("%d/%m/%Y")
+            "date": activity.date_activite.strftime("%d/%m/%Y"),
+            "url": f"{site_url}/activities/{activity.id}",
         })
 
+    context["site_url"] = site_url
     return context
 
 
@@ -281,23 +286,19 @@ def _limit_sentences(text, max_sentences=2):
 
 
 def _clean_model_answer(text, lang):
+    """Nettoie la réponse du modèle en préservant le markdown (listes, liens…)."""
     t = _strip_greetings(text)
     # remove any accidental empathy line duplication
     empathy = EMPATHY_LINES.get(lang, EMPATHY_LINES["fr"])
     t = t.replace(empathy, "").strip()
-    t = _limit_sentences(t, max_sentences=2)
-    return _normalize_line(t)
+    return t
 
 
 def _compose_reply(main_text, lang, add_contact=False):
-    lines = []
-    lines.append(EMPATHY_LINES.get(lang, EMPATHY_LINES["fr"]))
-    lines.append(_normalize_line(main_text))
+    parts = [main_text.strip()]
     if add_contact:
-        lines.append(CONTACT_LINES.get(lang, CONTACT_LINES["fr"]))
-    # Remove empty lines
-    lines = [l for l in lines if l]
-    return "\n".join(lines)
+        parts.append(f"\n---\n*{CONTACT_LINES.get(lang, CONTACT_LINES['fr'])}*")
+    return "\n".join(p for p in parts if p.strip())
 
 
 def start_new_chat(session_key):
@@ -335,11 +336,15 @@ def send_message(text, session_key):
         )
 
         system_preamble = (
-            "Tu es l'assistant officiel du Centre Jeunes Kamenge (CJK). "
+            "Tu es l'assistant officiel du Centre Jeunes Kamenge (CJK), centre de jeunesse "
+            "situe a Bujumbura (Burundi), engage pour la paix et la reconciliation. "
             f"Reponds uniquement en {lang_full}. "
-            "Ne salue pas. Ne pose pas de questions. "
-            "Donne uniquement la reponse factuelle en 1 a 2 phrases. "
-            "N'ajoute pas d'informations qui ne sont pas dans le contexte."
+            "Ne salue pas. Formate tes reponses en Markdown professionnel : "
+            "utilise des listes a puces (- ) pour enumerer, du **gras** pour les points cles, "
+            "des titres courts (###) quand la reponse a plusieurs parties, "
+            "et des liens Markdown [texte](url) quand une URL est disponible dans le contexte. "
+            "Reste concis : maximum 6 a 8 lignes. "
+            "N'invente pas d'informations qui ne sont pas dans le contexte fourni."
         )
 
         # Si on a une réponse du dataset, on la reformule en style pro
@@ -348,7 +353,8 @@ def send_message(text, session_key):
             prompt = (
                 f"Question: {user_text}\n"
                 f"Reponse de reference (a conserver sur le fond): {dataset_response}\n"
-                "Reformule de maniere professionnelle et concise."
+                "Reformule de maniere professionnelle et concise, en Markdown "
+                "(listes a puces si plusieurs elements, gras pour les points cles)."
             )
             response = client.chat(
                 message=prompt,
@@ -370,14 +376,17 @@ def send_message(text, session_key):
             chat_history.append({"role": "CHATBOT", "message": bot_response})
             return bot_response
 
-        # Contexte condensé
+        # Contexte condensé (avec URLs pour permettre les liens Markdown)
         posts = "; ".join(
-            f"{p['title']} ({p['author']}, {p['category']})" for p in db_context.get("blog_posts", [])
+            f"{p['title']} ({p['author']}, {p['category']}, lien: {p['url']})"
+            for p in db_context.get("blog_posts", [])
         )
         activities = "; ".join(
-            f"{a['title']} ({a['type']}, {a['date']})" for a in db_context.get("activities", [])
+            f"{a['title']} ({a['type']}, {a['date']}, lien: {a['url']})"
+            for a in db_context.get("activities", [])
         )
         context_lines = [
+            f"Site officiel: {db_context.get('site_url', 'https://cjkamenge.com')}.",
             f"Membres actifs: {db_context.get('members_count', 0)}.",
         ]
         if posts:

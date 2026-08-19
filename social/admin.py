@@ -47,9 +47,9 @@ class ChatMessageAdmin(admin.ModelAdmin):
 
 @admin.register(GalleryItem)
 class GalleryItemAdmin(admin.ModelAdmin):
-    list_display = ['title', 'type', 'category', 'height', 'order', 'created_at']
-    list_filter = ['type', 'category', 'height', 'created_at']
+    list_display = ['title', 'type', 'category', 'height', 'order', 'is_public', 'created_at']
+    list_filter = ['type', 'category', 'height', 'is_public', 'created_at']
     search_fields = ['title', 'category', 'url']
-    list_editable = ['order']
+    list_editable = ['order', 'is_public']
     date_hierarchy = 'created_at'
     list_per_page = 25
