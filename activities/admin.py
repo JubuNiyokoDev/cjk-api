@@ -7,7 +7,20 @@ class ActivityImageInline(admin.TabularInline):
 
 @admin.register(Activity)
 class ActivityAdmin(admin.ModelAdmin):
-    list_display = ['title', 'activity_type', 'author', 'date_activite', 'is_published']
-    list_filter = ['activity_type', 'is_published', 'date_activite']
-    search_fields = ['title', 'description', 'hashtags']
+    list_display = ['title', 'activity_type', 'author', 'date_activite', 'is_published', 'created_at']
+    list_filter = ['activity_type', 'is_published', 'date_activite', 'created_at', 'author']
+    search_fields = ['title', 'description', 'hashtags', 'external_link', 'author__username']
+    list_editable = ['is_published']
+    date_hierarchy = 'date_activite'
+    autocomplete_fields = ['author']
+    list_per_page = 25
     inlines = [ActivityImageInline]
+
+@admin.register(ActivityImage)
+class ActivityImageAdmin(admin.ModelAdmin):
+    list_display = ['__str__', 'activity', 'order', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['caption', 'activity__title']
+    list_editable = ['order']
+    autocomplete_fields = ['activity']
+    list_per_page = 25
