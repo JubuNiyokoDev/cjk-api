@@ -161,6 +161,24 @@ COHERE_MODEL = config('COHERE_MODEL', default='command-r-08-2024')
 # URL publique du site (utilisée par le chatbot pour générer des liens)
 FRONTEND_SITE_URL = config('FRONTEND_SITE_URL', default='https://cjkamenge.com')
 
+# Email (réinitialisation de mot de passe) : SMTP si EMAIL_HOST_USER est
+# défini, sinon affichage console (développement).
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+if EMAIL_HOST_USER:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+    EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+    EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = config(
+    'DEFAULT_FROM_EMAIL',
+    default=EMAIL_HOST_USER or 'Centre Jeunes Kamenge <no-reply@cjkamenge.com>',
+)
+# Durée de validité du lien de réinitialisation (cohérente avec l'email envoyé).
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24  # 24 heures
+
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:3000').split(',')
