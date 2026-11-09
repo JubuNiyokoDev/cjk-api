@@ -83,12 +83,86 @@ Les écritures passent par `s3.rundinova.com`, authentifiées en SigV4.
 1. **Ne jamais vider `MEDIA_ROOT`.** C'est désormais la seule source des
    anciens fichiers, et leurs URLs en dépendent. À sauvegarder avant toute
    opération sur `/home/cjk-api.io`.
-2. **Identifiants partagés.** L'API utilise aujourd'hui les identifiants racine
-   de RustFS. À remplacer par un utilisateur dédié restreint au bucket
-   `cjk-media` dès que possible.
+2. **Identifiants partagés — dette assumée, décidée le 2026-11-09.** Voir la
+   section « Cloisonnement des accès » ci-dessous.
 3. **Pas de sauvegarde S3.** RustFS est mono-nœud, mono-disque, sans
    réplication : le bucket doit entrer dans une stratégie de sauvegarde.
 4. **Migrer les anciens fichiers est possible mais inutile.** Copier un fichier
    du disque vers S3 ne changerait pas son URL (le disque gagne). Pour basculer
    réellement un ancien fichier, il faudrait le copier *puis* le retirer du
    disque — ce qui change son URL publique. À ne faire que de façon délibérée.
+
+## Cloisonnement des accès (dette connue)
+
+`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` sont aujourd'hui les identifiants
+**racine** de RustFS, partagés avec toute autre application qui utiliserait le
+stockage centralisé — seul le nom du bucket change d'une application à l'autre.
+
+Le nom du bucket dans `.env` **n'est pas une barrière** : c'est seulement
+l'endroit où l'application choisit d'écrire. Ce même jeu d'identifiants permet
+en réalité de :
+
+- lire, écrire et supprimer dans **tous les buckets de tous les projets** ;
+- administrer le stockage : créer et supprimer un bucket, modifier une politique,
+  créer des utilisateurs.
+
+Autrement dit, une fuite du `.env` de cette API compromet l'ensemble du stockage
+centralisé, ce qui annule le bénéfice de la centralisation.
+
+**Décision du 2026-11-09 :** on démarre avec la clé racine, le cloisonnement est
+traité plus tard. Ce qui suit évite de refaire l'enquête le moment venu.
+
+### Ce qui a été vérifié sur l'instance
+
+RustFS expose une API d'administration compatible MinIO v3, signée en SigV4 avec
+les identifiants racine, et elle répond (sondé le 2026-11-09 sur
+`http://127.0.0.1:9100`) :
+
+| Appel | Résultat |
+|---|---|
+| `GET /minio/admin/v3/info` | `200`, JSON en clair |
+| `GET /minio/admin/v3/list-canned-policies` | `200`, politiques intégrées en clair |
+| `PUT /minio/admin/v3/add-canned-policy?name=...` | `200`, politique créée puis relue dans la liste |
+| `DELETE /minio/admin/v3/remove-canned-policy?name=...` | `200` |
+| `PUT /minio/admin/v3/add-user?accessKey=...` (corps en clair) | `400 — failed to decrypt MinIO admin payload` |
+| `GET /minio/admin/v3/list-users`, `list-service-accounts` | `200` mais **réponse chiffrée** |
+
+Conclusion : **les politiques nommées sont pilotables directement** par requête
+signée ; en revanche la création d'un utilisateur ou d'un compte de service
+exige le format de payload chiffré de MinIO (madmin), que l'API admin n'accepte
+pas en clair. Deux voies possibles : la page *Access Keys* de la console, ou le
+client `mc` de MinIO, qui implémente ce format.
+
+Ne pas oublier : `x-amz-content-sha256` est obligatoire sur ces appels, sans quoi
+RustFS répond `400 missing header: x-amz-content-sha256` avant même de vérifier
+la signature.
+
+### Politique à appliquer le moment venu
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": ["arn:aws:s3:::cjk-media/*"]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::cjk-media"]
+    }
+  ]
+}
+```
+
+La lecture publique des objets vient de la **politique du bucket**, pas de ces
+identifiants : le compte de service de l'API n'a donc besoin que d'écrire. Une
+fois le compte créé et la politique attachée, il suffit de remplacer les deux
+variables dans `/home/cjk-api.io/.env` et de redémarrer `cjk-api` — rien d'autre
+ne change, et la clé racine ne sort plus de `/opt/rundinova-storage/.env`.
+
+Vérification attendue après bascule : écriture dans `cjk-media` acceptée,
+écriture dans un autre bucket refusée (`AccessDenied`), appel à
+`/minio/admin/v3/info` refusé.
