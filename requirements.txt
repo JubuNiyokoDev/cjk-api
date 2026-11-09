@@ -8,3 +8,7 @@ django-filter==23.5
 google-generativeai==0.8.3
 psycopg2-binary>=2.9
 cohere
+# Stockage objet S3 (RustFS) pour les nouveaux medias : voir core/storages.py.
+# Importes seulement si AWS_STORAGE_BUCKET_NAME est renseigne.
+django-storages==1.14.4
+boto3>=1.34

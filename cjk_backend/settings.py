@@ -152,6 +152,50 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# --- Stockage des médias : S3 (RustFS) pour les nouveaux fichiers ------------
+#
+# Les fichiers déjà téléversés restent sur le disque et conservent leur URL
+# https://api.cjkamenge.com/media/... ; seuls les nouveaux partent sur S3.
+# L'arbitrage fichier par fichier est fait par core.storages.MediaRouterStorage.
+#
+# Tant que AWS_STORAGE_BUCKET_NAME est vide, il n'y a pas de backend distant et
+# tout reste sur le disque : la configuration ci-dessous est sans effet, et le
+# code peut donc être déployé avant que les identifiants ne soient en place.
+
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME', default='')
+AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL', default='')
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
+AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')
+
+# RustFS est servi en path-style derrière nginx : s3.rundinova.com/<bucket>/<clé>.
+# Le style virtual-host exigerait un DNS et un certificat joker.
+AWS_S3_ADDRESSING_STYLE = 'path'
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+
+# Domaine de lecture publique. Il inclut le bucket car l'adressage est
+# path-style : django-storages concatène simplement <domaine>/<clé>.
+# Vide => les URLs retombent sur AWS_S3_ENDPOINT_URL.
+AWS_S3_CUSTOM_DOMAIN = config('AWS_S3_CUSTOM_DOMAIN', default='')
+
+# URLs sans signature : les objets destinés au site public sont servis par une
+# politique de bucket en lecture publique. Une URL pré-signée expirerait, ce qui
+# casserait le cache navigateur, les partages et l'indexation.
+AWS_QUERYSTRING_AUTH = False
+
+# Ne jamais écraser un objet existant : django-storages suffixe le nom.
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'core.storages.MediaRouterStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}
+
 # Google Gemini API Key
 GOOGLE_API_KEY = config('GOOGLE_API_KEY', default='')
 
