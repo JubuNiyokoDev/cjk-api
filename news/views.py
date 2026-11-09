@@ -17,9 +17,13 @@ class NewsViewSet(HashtagFilterMixin, GalleryActionsMixin, viewsets.ModelViewSet
 
     def get_queryset(self):
         queryset = News.objects.prefetch_related('images').annotate(
-            likes_count=Count('likes'),
-            comments_count=Count('comments')
-        )
+            # distinct=True : sans cela les deux Count se multiplient entre eux
+            # (produit cartésien des jointures likes x comments).
+            likes_count=Count('likes', distinct=True),
+            comments_count=Count('comments', distinct=True)
+        # order_by explicite : annotate() ajoute un GROUP BY, qui met
+        # QuerySet.ordered à False et rend la pagination non déterministe.
+        ).order_by('-created_at', '-id')
         user = self.request.user
         if user.is_authenticated and user.is_staff:
             return queryset

@@ -35,10 +35,18 @@ class ActivityViewSet(HashtagFilterMixin, GalleryActionsMixin, viewsets.ModelVie
     image_parent_field = 'activity'
 
     def get_queryset(self):
+        # distinct=True obligatoire : deux Count sur deux relations multiples
+        # dans le même annotate produisent un produit cartésien (chaque like est
+        # compté une fois par commentaire et inversement). Une activité avec
+        # 3 likes et 4 commentaires remonterait 12 et 12.
+        # order_by explicite : annotate() ajoute un GROUP BY, ce qui met
+        # QuerySet.ordered à False même si Meta.ordering existe. DRF avertit
+        # alors « Pagination may yield inconsistent results » et une même
+        # activité peut apparaître sur deux pages, ou sur aucune.
         queryset = Activity.objects.prefetch_related('images').annotate(
-            likes_count=Count('likes'),
-            comments_count=Count('comments')
-        )
+            likes_count=Count('likes', distinct=True),
+            comments_count=Count('comments', distinct=True)
+        ).order_by('-date_activite', '-id')
         user = self.request.user
         if user.is_authenticated and user.is_staff:
             return queryset

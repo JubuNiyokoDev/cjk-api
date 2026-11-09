@@ -28,9 +28,14 @@ class BlogPostViewSet(HashtagFilterMixin, GalleryActionsMixin, viewsets.ModelVie
 
     def get_queryset(self):
         queryset = BlogPost.objects.prefetch_related('images').annotate(
-            likes_count=Count('likes'),
-            comments_count=Count('comments')
-        )
+            # distinct=True : sans cela les deux Count se multiplient entre eux
+            # (produit cartésien des jointures likes x comments).
+            likes_count=Count('likes', distinct=True),
+            comments_count=Count('comments', distinct=True)
+        # order_by explicite : BlogPost n'a aucun Meta.ordering, et annotate()
+        # ajoute un GROUP BY : sans cela la liste paginee est non deterministe
+        # (un article peut apparaitre sur deux pages, ou sur aucune).
+        ).order_by('-created_at', '-id')
         user = self.request.user
         if user.is_authenticated and user.is_staff:
             return queryset
